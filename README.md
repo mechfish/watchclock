@@ -11,7 +11,7 @@ But after the expiration date, your object becomes deletable again until you set
 To prevent this, [configure your AWS credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)) and then run `watchclock` from the command line:
 
 ```sh
-watchclock renew --bucket my-bucket-name --minimum-days 8 --renew-for 30
+watchclock renew --minimum-days 8 --renew-for 30 my-bucket-name
 ```
 
 For any object in `my-bucket-name` that has an Object Lock retention date less than 8 days from now, this command will reset that date to 30 days from now.
