@@ -5,7 +5,7 @@ PLATFORMS := windows linux darwin
 os = $(word 1, $@)
 
 .PHONY: test
-test: lint
+test:
 	go test $(PKGS)
 
 .PHONY: lint

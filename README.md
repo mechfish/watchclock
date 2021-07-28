@@ -4,7 +4,7 @@
 
 `watchclock` renews S3 Object Locks which are about to expire.
 
-Object Lock prevents attackers from deleting your S3 objects even if they've managed to steal AWS credentials. For each S3 object, you choose a date in the future, and the object cannot be deleted before that date. 
+Object Lock prevents attackers from deleting your S3 objects even if they've managed to steal AWS credentials. For each S3 object, you choose a date in the future, and the object cannot be deleted before that date.
 
 But after the expiration date, your object becomes deletable again until you set a _new_ date.
 
@@ -20,27 +20,44 @@ By running this command once per week, you ensure that no Object Lock in the buc
 
 ## Deleting Objects
 
-Intentionally deleting an Object-Locked item requires letting the lock expire first. `watchclock` has a `delete` command to help with this:
+Intentionally deleting an Object-Locked item requires letting the lock expire first. But because Object Lock works only on versioned buckets, you can use a workflow like this:
+
+- Delete the object, which will write a delete marker to the bucket. (This will not delete the old version, for two reasons: One is that old versions are always preserved by default, but the other is that the old version has Object Lock enabled.
+
+- Wait for the Object Lock to expire on the old version.
+
+- Delete the old version.
+
+By default `watchclock` does not update locks on older versions of objects, so if an object is deleted (and its current version becomes a delete marker) its older versions will automatically age out of their Object Lock, at which point they can be pruned by a lifecycle rule like this one:
 
 ```sh
-watchclock delete my-bucket-name/path/to/object
+aws s3api put-bucket-lifecycle-configuration --lifecycle-configuration file://lifecycle-rules.json --bucket mybucket
 ```
 
-This command schedules the specified S3 object for future deletion. It will actually be deleted once its Object Lock has expired.
+where the contents of lifecycle-rules.json is:
 
-To change your mind and un-schedule an object for deletion, run:
-
-```sh
-watchclock undelete my-bucket-name/path/to/object
+```json
+{
+  "Rules": [
+    {
+      "ID": "prune-deleted-objects",
+      "Prefix": "",
+      "Status": "Enabled",
+      "NoncurrentVersionExpiration": {
+        "NoncurrentDays": 30
+      }
+    }
+  ]
+}
 ```
-
-(`watchclock` stores its list of items to delete in a `.watchclock-to-delete` directory at the top level of the S3 bucket. `watchclock` will not set or renew Object Locks on this directory or its contents, and it will periodically clean up the directory.)
 
 ## Object Versions
 
 So far we've discussed Object Locks as if the apply to whole S3 objects, but in a versioned bucket every _version_ of an object has its own Object Lock.
 
-By default `watchclock renew` updates the lock on the _current_ version of an object but not on older versions. But by passing the `--all-versions` option, it will update the lock for _all_ versions of the object. Note that this is _much_ less efficient to run, because it requires one API call per affected version.
+By default `watchclock renew` only updates the lock on the _current_ version of an object. To update Object Locks on _all_ versions of objects, pass the `--all-versions` option. Note that this is _much_ less efficient to run, because it requires one API call per affected version.
+
+`--all-versions` will not update Object Locks on currently-deleted objects -- that is, objects whose current version is a delete marker. To change this behavior, add an additional option, `--include-deleted-objects` -- this will renew Object Locks on older versions of deleted objects.
 
 ## Caching
 

@@ -13,7 +13,6 @@ type Config struct {
 	CacheTableName    string
 	ClearCache        bool
 	Debug             bool
-	DeleteMarkerDir   string
 	MinimumDays       uint
 	Region            string
 	RenewForDays      uint
@@ -64,7 +63,6 @@ func (c *Config) DeclareFlags(commandName string, flagSet *flag.FlagSet) {
 	flagSet.StringVar(&c.CacheTableName, "cache-table", "watchclock-cache", "Name of the DynamoDB table to use for the cache.")
 	flagSet.BoolVar(&c.ClearCache, "clear-cache", false, "Clear and rebuild the Object Lock cache.")
 	flagSet.BoolVar(&c.Debug, "debug", false, "Log debug messages.")
-	flagSet.StringVar(&c.DeleteMarkerDir, "delete-marker-dir", ".watchclock-to-delete", "S3 directory for storing object deletion markers.")
 	flagSet.UintVar(&c.MinimumDays, "minimum-days", 1, "Renew all locks that will expire within this many days.")
 	flagSet.StringVar(&c.Region, "region", "us-east-1", "Name of the AWS region containing the bucket.")
 	flagSet.UintVar(&c.RenewForDays, "renew-for", 7, "Reset object lock expiration to N days from now.")
@@ -78,9 +76,6 @@ func (c *Config) DeclareFlags(commandName string, flagSet *flag.FlagSet) {
 func (c *Config) Validate() error {
 	if c.CacheTableName == "" {
 		c.CacheTableName = "watchclock-cache"
-	}
-	if c.DeleteMarkerDir == "" {
-		c.DeleteMarkerDir = ".watchclock-to-delete"
 	}
 	if c.Region == "" {
 		c.Region = "us-east-1"

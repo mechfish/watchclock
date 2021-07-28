@@ -36,18 +36,6 @@ var commands = &subcommander.CommandSet{
 			NumArgsRequired: 1,
 			Run:             runCommand(watchclock.Renew),
 		},
-		{
-			Name:            "delete",
-			Description:     "Schedule an S3 object for deletion when its Object Lock expires",
-			NumArgsRequired: 1,
-			Run:             runCommand(watchclock.Delete),
-		},
-		{
-			Name:            "undelete",
-			Description:     "Cancel the pending deletion of an S3 object",
-			NumArgsRequired: 1,
-			Run:             runCommand(watchclock.UnDelete),
-		},
 	},
 }
 

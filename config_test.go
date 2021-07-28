@@ -31,7 +31,6 @@ func TestSetsDefaults(t *testing.T) {
 	assert.Equal(t, "watchclock-cache", c.CacheTableName)
 	assert.Equal(t, false, c.ClearCache)
 	assert.Equal(t, false, c.Debug)
-	assert.Equal(t, ".watchclock-to-delete", c.DeleteMarkerDir)
 	assert.Equal(t, uint(1), c.MinimumDays)
 	assert.Equal(t, "us-east-1", c.Region)
 	assert.Equal(t, uint(7), c.RenewForDays)
