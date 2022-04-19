@@ -3,51 +3,39 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"os"
 
-	"github.com/mechfish/subcommander"
 	"github.com/mechfish/watchclock"
 )
 
-// Transform the subcommander Config and pass it to the command.
-func runCommand(cmd func(*watchclock.Config, []string) error) func(subcommander.Config, []string) error {
-	return func(sConf subcommander.Config, args []string) error {
-		if config, ok := sConf.(*watchclock.Config); ok {
-			if err := config.Validate(); err != nil {
-				return err
-			}
-			defer config.Cleanup()
-			return cmd(config, args)
-		}
-		panic("Configuration error: Could not convert CLI config")
-	}
-}
-
-var commands = &subcommander.CommandSet{
-	Name:               "watchclock",
-	DefaultCommandName: "renew",
-	Commands: []subcommander.Command{
-		{
-			Name:            "renew",
-			Description:     "Update S3 Object Locks that are nearly expired",
-			NumArgsRequired: 1,
-			Run:             runCommand(watchclock.Renew),
-		},
-	},
-}
-
 func main() {
-	err := commands.Execute(&watchclock.Config{})
+	conf := watchclock.Config{}
+
+	flag.StringVar(&conf.CacheTableName, "cache-table-name", "watchclock-cache", "Name of the DynamoDB table to use for the cache.")
+	flag.BoolVar(&conf.ClearCache, "clear-cache", false, "Clear and rebuild the Object Lock cache.")
+	flag.BoolVar(&conf.Debug, "debug", false, "Log debug messages.")
+	flag.UintVar(&conf.MinimumDays, "minimum-days", 1, "Renew all locks that will expire within this many days.")
+	flag.StringVar(&conf.Region, "region", "us-east-1", "Name of the AWS region containing the bucket.")
+	flag.UintVar(&conf.RenewForDays, "renew-for", 7, "Reset object lock expiration to N days from now.")
+	flag.BoolVar(&conf.UpdateAllVersions, "all-versions", false, "Update locks for every version of each S3 object.")
+	flag.BoolVar(&conf.SkipCache, "no-cache", false, "Do not use the Object Lock cache.")
+	flag.BoolVar(&conf.CreateCache, "use-cache", false, "Create and use a cache table in DynamoDB.")
+
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: watchclock [arguments]\n\nOptions:\n")
+		flag.PrintDefaults()
+	}
+
+	flag.Parse()
+
+	err := conf.Validate()
 	if err == nil {
-		return
+		err = watchclock.Renew(&conf, flag.Args())
 	}
-	var helpE *subcommander.NeededHelpError
-	if errors.As(err, &helpE) {
-		os.Exit(2)
+	if err != nil {
+		fmt.Fprintf(flag.CommandLine.Output(), "%s\n", err.Error())
+		os.Exit(1)
 	}
-	fmt.Fprintf(flag.CommandLine.Output(), "%s\n", err.Error())
-	os.Exit(1)
 }
