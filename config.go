@@ -1,10 +1,5 @@
 package watchclock
 
-import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-)
-
 // A Config contains the options for a run of `watchclock`.
 type Config struct {
 	CacheTableName    string
@@ -16,8 +11,6 @@ type Config struct {
 	RenewForDays      uint
 	SkipCache         bool
 	UpdateAllVersions bool
-
-	session *session.Session
 }
 
 // Validate returns an error if the Config has missing or malformed values.
@@ -37,16 +30,4 @@ func (c *Config) Validate() error {
 		c.RenewForDays = 7
 	}
 	return nil
-}
-
-// GetSession returns an AWS session.
-func (c *Config) GetSession() *session.Session {
-	if c.session == nil {
-		c.session = session.Must(session.NewSession(
-			&aws.Config{
-				Region: aws.String(c.Region),
-			},
-		))
-	}
-	return c.session
 }

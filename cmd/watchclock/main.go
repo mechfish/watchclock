@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -30,9 +31,11 @@ func main() {
 
 	flag.Parse()
 
+	ctx := context.TODO()
+
 	err := conf.Validate()
 	if err == nil {
-		err = watchclock.Renew(&conf, flag.Args())
+		err = watchclock.Renew(ctx, &conf, flag.Args())
 	}
 	if err != nil {
 		fmt.Fprintf(flag.CommandLine.Output(), "%s\n", err.Error())
